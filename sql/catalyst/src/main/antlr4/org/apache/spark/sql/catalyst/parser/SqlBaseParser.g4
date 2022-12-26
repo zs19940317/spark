@@ -649,6 +649,22 @@ joinCriteria
     | USING identifierList
     ;
 
+/**
+ * https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-sampling.html
+ * spark only gives the following information. but the code gives us more.
+ * as the word tells us, sample take samples from tables
+ * it's base format is:
+ * TABLESAMPLE ({ integer_expression | decimal_expression } PERCENT)
+ *      | TABLESAMPLE ( integer_expression ROWS )
+ *      | TABLESAMPLE ( BUCKET integer_expression OUT OF integer_expression )
+ * we can get three kind of operation on the format up.
+ * 1. TABLESAMPLE(10 PERCENT) or TABLESAMPLE(10.4 PERCENT)
+ * 2. TABLESAMPLE(100 ROWS)
+ * 3. TABLESAMPLE(BUCKET x OUT OF y). It is the same with hive tables; for example,
+ *    there are 64 partition, y is 32, and then we could sample 64 / 32 = 2 partitions.
+ *    which two? x is the offset, if x is 7, and then the two partitions are
+ *    7 and 32+7=39
+ */
 sample
     : TABLESAMPLE LEFT_PAREN sampleMethod? RIGHT_PAREN (REPEATABLE LEFT_PAREN seed=INTEGER_VALUE RIGHT_PAREN)?
     ;
@@ -784,9 +800,26 @@ booleanExpression
     | left=booleanExpression operator=OR right=booleanExpression   #logicalBinary
     ;
 
+/**
+ * examples like below
+ * we need remember that
+ * '?' represent zero or one
+ * '*' represent zero or more
+ */
 predicate
+    /**
+     * NOT BETWEEN lower AND upper
+     * BETWEEN lower AND upper
+     */
     : NOT? kind=BETWEEN lower=valueExpression AND upper=valueExpression
+    /**
+     * NOT IN (expression, expression, ...)
+     * IN (expression, expression, ....)
+     */
     | NOT? kind=IN LEFT_PAREN expression (COMMA expression)* RIGHT_PAREN
+    /**
+     * NOT IN (query) | IN (query)
+     */
     | NOT? kind=IN LEFT_PAREN query RIGHT_PAREN
     | NOT? kind=RLIKE pattern=valueExpression
     | NOT? kind=(LIKE | ILIKE) quantifier=(ANY | SOME | ALL) (LEFT_PAREN RIGHT_PAREN | LEFT_PAREN expression (COMMA expression)* RIGHT_PAREN)
