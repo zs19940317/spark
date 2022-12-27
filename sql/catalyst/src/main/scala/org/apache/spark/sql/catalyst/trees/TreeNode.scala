@@ -187,6 +187,12 @@ object AlwaysProcess {
 }
 
 // scalastyle:off
+
+/**
+ * TreeNode is the base class for all tree structure in spark
+ * it defines lots of base operation for tree operation
+ * @tparam BaseType
+ */
 abstract class TreeNode[BaseType <: TreeNode[BaseType]] extends Product with TreePatternBits {
 // scalastyle:on
   self: BaseType =>

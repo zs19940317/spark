@@ -50,7 +50,10 @@ case class FunctionResource(resourceType: FunctionResourceType, uri: String)
 /**
  * A simple trait representing a class that can be used to load resources used by
  * a function. Because only a SQLContext can load resources, we create this trait
- * to avoid of explicitly passing SQLContext around.
+ * to avoid of explicitly passing SQLContext around. we know that spark not only
+ * serve internal function, it also supports user-defined function and hive functions
+ * this functions is serves as jar or other file type. this FunctionResourceLoader
+ * is used to load this jar or files into session.
  */
 trait FunctionResourceLoader {
   def loadResource(resource: FunctionResource): Unit

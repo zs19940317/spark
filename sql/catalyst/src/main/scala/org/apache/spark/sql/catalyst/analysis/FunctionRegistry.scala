@@ -296,6 +296,10 @@ trait EmptyFunctionRegistryBase[T] extends FunctionRegistryBase[T] {
   }
 }
 
+/**
+ * serve as function register, lookup and drop. Default implementation
+ * is SimpleFunctionRegistry. it uses a map to manage the internal functions
+ */
 trait FunctionRegistry extends FunctionRegistryBase[Expression] {
 
   /** Create a copy of this registry with identical functions as this registry. */
