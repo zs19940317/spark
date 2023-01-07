@@ -111,6 +111,13 @@ class PlanChangeLogger[TreeType <: TreeNode[_]] extends Logging {
   }
 }
 
+/**
+ * RuleExecutor is a driver to execute rule match and rule apply.
+ * all rule apply operation should extend the abstract class or use
+ * the default method in this class. surely, the subclass can
+ * automatically get the method in this abstract class
+ * @tparam TreeType
+ */
 abstract class RuleExecutor[TreeType <: TreeNode[_]] extends Logging {
 
   /**
@@ -205,14 +212,21 @@ abstract class RuleExecutor[TreeType <: TreeNode[_]] extends Logging {
 
       // Run until fix point (or the max number of iterations as specified in the strategy.
       while (continue) {
+        // what the foldLeft do?
+        // foldLeft's first parameter is the initial value of the operation
+        // then it use a partial function, use each of batch's rule and the plan, apply the rule
+        // to the plan. current batch's rule is applied
         curPlan = batch.rules.foldLeft(curPlan) {
+              // 这里是 (plan, batch中的每一个规则)，这样，每次都这样处理
           case (plan, rule) =>
+            // 定义开始时间，应用规则，并计算规则应用时间
             val startTime = System.nanoTime()
             val result = rule(plan)
             val runTime = System.nanoTime() - startTime
             val effective = !result.fastEquals(plan)
 
             if (effective) {
+              // 记录一些日志
               queryExecutionMetrics.incNumEffectiveExecution(rule.ruleName)
               queryExecutionMetrics.incTimeEffectiveExecutionBy(rule.ruleName, runTime)
               planChangeLogger.logRule(rule.ruleName, plan, result)
@@ -223,7 +237,8 @@ abstract class RuleExecutor[TreeType <: TreeNode[_]] extends Logging {
             // Record timing information using QueryPlanningTracker
             tracker.foreach(_.recordRuleInvocation(rule.ruleName, runTime, effective))
 
-            // Run the structural integrity checker against the plan after each rule.
+            // Run the structural integrity checker against the plan after each rule. if the
+            // plan is broken, throw exception.
             if (effective && !isPlanIntegral(plan, result)) {
               throw QueryExecutionErrors.structuralIntegrityIsBrokenAfterApplyingRuleError(
                 rule.ruleName, batch.name)

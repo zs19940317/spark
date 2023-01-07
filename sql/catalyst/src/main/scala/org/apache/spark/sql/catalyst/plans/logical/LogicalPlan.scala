@@ -41,7 +41,11 @@ abstract class LogicalPlan
    */
   def metadataOutput: Seq[Attribute] = children.flatMap(_.metadataOutput)
 
-  /** Returns true if this subtree has data from a streaming data source. */
+
+  /**
+   * Returns true if this subtree has data from a streaming data source.
+   * if any of the children is streaming, this variable is true.
+   */
   def isStreaming: Boolean = _isStreaming
   private[this] lazy val _isStreaming = children.exists(_.isStreaming)
 

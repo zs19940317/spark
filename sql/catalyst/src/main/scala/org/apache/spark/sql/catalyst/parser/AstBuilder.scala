@@ -76,6 +76,10 @@ class AstBuilder extends SqlBaseParserBaseVisitor[AnyRef] with SQLConfHelper wit
     }
   }
 
+  /**
+   * the entry point for query parser
+   * @param ctx the parse tree
+   *    */
   override def visitSingleStatement(ctx: SingleStatementContext): LogicalPlan = withOrigin(ctx) {
     visit(ctx.statement).asInstanceOf[LogicalPlan]
   }
@@ -869,8 +873,18 @@ class AstBuilder extends SqlBaseParserBaseVisitor[AnyRef] with SQLConfHelper wit
    * separated) relations here, these get converted into a single plan by condition-less inner join.
    */
   override def visitFromClause(ctx: FromClauseContext): LogicalPlan = withOrigin(ctx) {
+    /**
+     * 1. resolve join
+     * 2. resolve pivot
+     * note: if the ctx.relation is empty, then return null
+     * if the ctx contains only one relation. then if return the one relation without join
+     */
     val from = ctx.relation.asScala.foldLeft(null: LogicalPlan) { (left, relation) =>
       val right = plan(relation.relationPrimary)
+      /**
+       * if the left is null, just return right in optionalMap, not execute the
+       * function in next parameter.
+       */
       val join = right.optionalMap(left) { (left, right) =>
         if (relation.LATERAL != null) {
           if (!relation.relationPrimary.isInstanceOf[AliasedQueryContext]) {

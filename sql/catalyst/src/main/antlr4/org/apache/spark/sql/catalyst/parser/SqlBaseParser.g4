@@ -710,10 +710,23 @@ relationPrimary
     | functionTable                                         #tableValuedFunction
     ;
 
+// the example of inline table is:
+// select t.d from (values(1,2),(2,3)) t(d1,d2)
+// the above sql is a inline table, t as the table name, d1 and d2 as the column name
 inlineTable
     : VALUES expression (COMMA expression)* tableAlias
     ;
 
+//CREATE FUNCTION ProductsCostingMoreThan(@cost money)
+//RETURNS TABLE
+//AS
+//RETURN
+//    SELECT ProductID, UnitPrice
+//    FROM Products
+//    WHERE UnitPrice > @cost
+// the above is an example of a function return table, it is sql-server sql syntax, used to describe function table.
+// we can use it as the relation in from clause like:
+// select * from ProductsCostingMoreThan('money')
 functionTable
     : funcName=functionName LEFT_PAREN (expression (COMMA expression)*)? RIGHT_PAREN tableAlias
     ;
@@ -736,6 +749,7 @@ multipartIdentifierList
     : multipartIdentifier (COMMA multipartIdentifier)*
     ;
 
+// like catalogA.schemaA.tableA
 multipartIdentifier
     : parts+=errorCapturingIdentifier (DOT parts+=errorCapturingIdentifier)*
     ;

@@ -52,6 +52,8 @@ object CTESubstitution extends Rule[LogicalPlan] {
       return plan
     }
     val isCommand = plan.exists {
+          // 匿名偏函数，_代表参数，f: TreeType => Boolean, 参数是plan本身
+          // 这里是根据plan的实例类判定是否是一个command
       case _: Command | _: ParsedStatement | _: InsertIntoDir => true
       case _ => false
     }

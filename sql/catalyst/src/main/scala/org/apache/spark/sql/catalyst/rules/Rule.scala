@@ -32,5 +32,10 @@ abstract class Rule[TreeType <: TreeNode[_]] extends SQLConfHelper with Logging 
     if (className endsWith "$") className.dropRight(1) else className
   }
 
+  /**
+   * apply the rule
+   * @param plan
+   * @return
+   */
   def apply(plan: TreeType): TreeType
 }
