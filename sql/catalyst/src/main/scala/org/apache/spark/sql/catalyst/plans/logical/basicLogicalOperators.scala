@@ -1631,6 +1631,15 @@ case class DomainJoin(
 
 /**
  * A logical plan for lateral join.
+ * the lateral join exmaple like
+ * select c1, c2
+ *         from t1 as table1
+ *         inner join LATERAL (select c3, c4 from t2 where c3 = table1.c1) AS table2 on
+ *   table1.c1 = table2.c3
+ * left(LogicalPlan) is t1 as table1
+ * right(LateralSubquery) is table2 sub_query
+ * join type is inner join
+ * condition is table1.c1 = table2.c3
  */
 case class LateralJoin(
     left: LogicalPlan,

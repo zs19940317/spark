@@ -548,6 +548,10 @@ abstract class SparkPlan extends QueryPlan[SparkPlan] with Logging with Serializ
   }
 }
 
+/**
+ * leaf node will generate the initial RDD of the sql,
+ * always the datasource RDD like fileRDD. hadoopFileRDD
+ */
 trait LeafExecNode extends SparkPlan with LeafLike[SparkPlan] {
 
   override def producedAttributes: AttributeSet = outputSet

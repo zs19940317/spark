@@ -610,9 +610,22 @@ class AstBuilder extends SqlBaseParserBaseVisitor[AnyRef] with SQLConfHelper wit
 
   override def visitRegularQuerySpecification(
       ctx: RegularQuerySpecificationContext): LogicalPlan = withOrigin(ctx) {
+    /**
+     * if ctx.fromClause is null, return OneRowRelation() QueryPlan
+     * else return fromClause
+     *
+     * first process from clause, and then process other
+     * others contain selectClause, lateral view for sub-query problem
+     * where sub-clause,
+     */
     val from = OneRowRelation().optional(ctx.fromClause) {
       visitFromClause(ctx.fromClause)
     }
+
+    /**
+     * then composite other part
+     * SELECT xx FROM xxx WHERE xxx
+     */
     withSelectQuerySpecification(
       ctx,
       ctx.selectClause,
@@ -730,6 +743,9 @@ class AstBuilder extends SqlBaseParserBaseVisitor[AnyRef] with SQLConfHelper wit
       havingClause: HavingClauseContext,
       windowClause: WindowClauseContext,
       relation: LogicalPlan): LogicalPlan = withOrigin(ctx) {
+    /**
+     * select distinct xxx from xxx where xxx
+     */
     val isDistinct = selectClause.setQuantifier() != null &&
       selectClause.setQuantifier().DISTINCT() != null
 
@@ -747,6 +763,18 @@ class AstBuilder extends SqlBaseParserBaseVisitor[AnyRef] with SQLConfHelper wit
     selectClause.hints.asScala.foldRight(plan)(withHints)
   }
 
+  /**
+   * *
+   * @param relation 从from中解析出来的内容
+   * @param expressions select后面的字段解析出来的内容
+   * @param lateralView 子查询平级引用
+   * @param whereClause 过滤子句
+   * @param aggregationClause 聚合语句
+   * @param havingClause 聚合过滤子句
+   * @param windowClause window语句
+   * @param isDistinct 是否是distinct查询
+   * @return
+   */
   def visitCommonSelectQueryClausePlan(
       relation: LogicalPlan,
       expressions: Seq[Expression],
@@ -768,6 +796,7 @@ class AstBuilder extends SqlBaseParserBaseVisitor[AnyRef] with SQLConfHelper wit
       case e: Expression => UnresolvedAlias(e)
     }
 
+    // 创建Project 关系算子
     def createProject() = if (namedExpressions.nonEmpty) {
       Project(namedExpressions, withFilter)
     } else {
@@ -878,8 +907,13 @@ class AstBuilder extends SqlBaseParserBaseVisitor[AnyRef] with SQLConfHelper wit
      * 2. resolve pivot
      * note: if the ctx.relation is empty, then return null
      * if the ctx contains only one relation. then if return the one relation without join
+     * relations can be table, view, join, sub_query
      */
     val from = ctx.relation.asScala.foldLeft(null: LogicalPlan) { (left, relation) =>
+
+      /**
+       * may return UnresolvedRelation, Sample, or SubQueryAlias
+       */
       val right = plan(relation.relationPrimary)
       /**
        * if the left is null, just return right in optionalMap, not execute the
@@ -897,6 +931,7 @@ class AstBuilder extends SqlBaseParserBaseVisitor[AnyRef] with SQLConfHelper wit
       }
       withJoinRelations(join, relation)
     }
+    // process pivot clause
     if (ctx.pivotClause() != null) {
       if (!ctx.lateralView.isEmpty) {
         throw QueryParsingErrors.lateralWithPivotInFromClauseNotAllowedError(ctx)
@@ -1270,10 +1305,25 @@ class AstBuilder extends SqlBaseParserBaseVisitor[AnyRef] with SQLConfHelper wit
 
   /**
    * Create an aliased table reference. This is typically used in FROM clauses.
+   * this method may returns UnresolvedRelation, Sample, or SubQueryAlias
+   * [[UnresolvedRelation]]
    */
   override def visitTableName(ctx: TableNameContext): LogicalPlan = withOrigin(ctx) {
+
+    /**
+     * visitMultipartIdentifier just concat the ctx.multipartIdentifier's parts' text
+     * they contains all the part of a common table name;
+     */
     val tableId = visitMultipartIdentifier(ctx.multipartIdentifier)
+    /**
+     * just use a tableId to construct a UnresolvedRelation
+     * current position do not need check catalog to find the table, it's the next step's doings
+     */
     val relation = UnresolvedRelation(tableId)
+    /**
+     * if there is no temporal clause and sample clause
+     * just return the UnresolvedRelation
+     */
     val table = mayApplyAliasPlan(
       ctx.tableAlias, relation.optionalMap(ctx.temporalClause)(withTimeTravel))
     table.optionalMap(ctx.sample)(withSample)

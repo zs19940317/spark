@@ -100,6 +100,10 @@
     <module>external/kafka-0-10-assembly</module>
     <module>external/kafka-0-10-sql</module>
     <module>external/avro</module>
+    <module>resource-managers/yarn</module>
+    <module>resource-managers/mesos</module>
+    <module>resource-managers/kubernetes/core</module>
+    <module>resource-managers/kubernetes/integration-tests</module>
     <!-- See additional modules enabled by profiles below -->
   </modules>
 

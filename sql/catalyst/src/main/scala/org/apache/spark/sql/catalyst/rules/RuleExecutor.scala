@@ -27,6 +27,7 @@ import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.util.Utils
 
 object RuleExecutor {
+  /** 查询性能度量 */
   protected val queryExecutionMeter = QueryExecutionMetering()
 
   /** Dump statistics about time spent running specific rules. */
@@ -44,6 +45,10 @@ object RuleExecutor {
   }
 }
 
+/**
+ * 查询计划变量日志
+ * @tparam TreeType 类型
+ */
 class PlanChangeLogger[TreeType <: TreeNode[_]] extends Logging {
 
   private val logLevel = SQLConf.get.planChangeLogLevel
@@ -218,11 +223,13 @@ abstract class RuleExecutor[TreeType <: TreeNode[_]] extends Logging {
         // to the plan. current batch's rule is applied
         curPlan = batch.rules.foldLeft(curPlan) {
               // 这里是 (plan, batch中的每一个规则)，这样，每次都这样处理
+              // 这里左侧plan其实是经过规则rule应用后的plan，从curPlan而来
           case (plan, rule) =>
             // 定义开始时间，应用规则，并计算规则应用时间
             val startTime = System.nanoTime()
             val result = rule(plan)
             val runTime = System.nanoTime() - startTime
+
             val effective = !result.fastEquals(plan)
 
             if (effective) {
@@ -247,6 +254,7 @@ abstract class RuleExecutor[TreeType <: TreeNode[_]] extends Logging {
             result
         }
         iteration += 1
+        // 重复执行策略
         if (iteration > batch.strategy.maxIterations) {
           // Only log if this is a rule that is supposed to run more than once.
           if (iteration != 2) {

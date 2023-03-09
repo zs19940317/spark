@@ -87,7 +87,7 @@ case class HyperLogLogPlusPlus(
 
   override def dataType: DataType = LongType
 
-  override def aggBufferSchema: StructType = StructType.fromAttributes(aggBufferAttributes)
+  override def  aggBufferSchema: StructType = StructType.fromAttributes(aggBufferAttributes)
 
   override def defaultResult: Option[Literal] = Option(Literal.create(0L, dataType))
 
@@ -148,6 +148,6 @@ object HyperLogLogPlusPlus {
     case Literal(d: Double, DoubleType) => d
     case Literal(dec: Decimal, _) => dec.toDouble
     case _ =>
-      throw QueryCompilationErrors.secondArgumentNotDoubleLiteralError
+      throw QueryCompilationErrors.secondArgumentNotDoubleLiteralError()
   }
 }

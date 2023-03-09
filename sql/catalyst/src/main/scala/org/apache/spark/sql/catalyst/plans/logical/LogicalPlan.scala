@@ -38,6 +38,7 @@ abstract class LogicalPlan
   /**
    * Metadata fields that can be projected from this node.
    * Should be overridden if the plan does not propagate its children's output.
+   * default implementation, output all children's metadataOutput
    */
   def metadataOutput: Seq[Attribute] = children.flatMap(_.metadataOutput)
 
@@ -45,8 +46,14 @@ abstract class LogicalPlan
   /**
    * Returns true if this subtree has data from a streaming data source.
    * if any of the children is streaming, this variable is true.
+   * spark streaming
    */
   def isStreaming: Boolean = _isStreaming
+
+  /**
+   * if any of the children of this LogicalPlan is streaming, then
+   * this logicalPlan is streaming
+   */
   private[this] lazy val _isStreaming = children.exists(_.isStreaming)
 
   override def verboseStringWithSuffix(maxFields: Int): String = {
@@ -72,9 +79,15 @@ abstract class LogicalPlan
    * can override this (e.g.
    * [[org.apache.spark.sql.catalyst.analysis.UnresolvedRelation UnresolvedRelation]]
    * should return `false`).
+   *
+   * it asks for all expressions and the children of the logical plan is resolved
    */
   lazy val resolved: Boolean = expressions.forall(_.resolved) && childrenResolved
 
+  /**
+   * SparkSql LogicalPlan use ' to represent that a logical operator has not been resolved
+   * @return
+   */
   override protected def statePrefix = if (!resolved) "'" else super.statePrefix
 
   /**

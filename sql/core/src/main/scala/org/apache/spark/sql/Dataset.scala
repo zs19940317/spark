@@ -322,8 +322,16 @@ class Dataset[T] private[sql](
       _numRows: Int,
       truncate: Int = 20,
       vertical: Boolean = false): String = {
+    // numRows must in [0, ByteArrayMethods.MAX_ROUNDED_ARRAY_LENGTH -1]
     val numRows = _numRows.max(0).min(ByteArrayMethods.MAX_ROUNDED_ARRAY_LENGTH - 1)
     // Get rows represented by Seq[Seq[String]], we may get one more line if it has more data.
+    // the data is represented in
+    // [
+    // [1, 1, 3],
+    // [2, 3, 4],
+    // [3, 5, 6]
+    // ]
+    // getRows get the target data in dataSource
     val tmpRows = getRows(numRows, truncate)
 
     val hasMoreData = tmpRows.length - 1 > numRows

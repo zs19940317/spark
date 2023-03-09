@@ -183,7 +183,8 @@ object AnalysisContext {
 
 /**
  * Provides a logical query plan analyzer, which translates [[UnresolvedAttribute]]s and
- * [[UnresolvedRelation]]s into fully typed objects using information in a [[SessionCatalog]].
+ * [[UnresolvedRelation]]s into fully typed objects using information in a [[SessionCatalog]]。
+ * UnResolvedLogicalPlan转换为ResolvedLogicalPlan
  */
 class Analyzer(override val catalogManager: CatalogManager)
   extends RuleExecutor[LogicalPlan] with CheckAnalysis with SQLConfHelper {
@@ -1353,6 +1354,7 @@ class Analyzer(override val catalogManager: CatalogManager)
 
     def apply(plan: LogicalPlan): LogicalPlan = plan.resolveOperatorsUpWithPruning(
       AlwaysProcess.fn, ruleId) {
+          // children未解析直接返回，等待下一次解析
       case p: LogicalPlan if !p.childrenResolved => p
 
       // Wait for the rule `DeduplicateRelations` to resolve conflicting attrs first.

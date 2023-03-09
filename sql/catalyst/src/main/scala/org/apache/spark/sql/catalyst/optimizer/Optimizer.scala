@@ -2087,8 +2087,20 @@ object ReplaceDeduplicateWithAggregate extends Rule[LogicalPlan] {
  *    join conditions will be incorrect.
  */
 object ReplaceIntersectWithSemiJoin extends Rule[LogicalPlan] {
+  /**
+   * _.containsPattern(INTERSECT) equalTo plan as the parameter
+   * TreePatternBits => Boolean
+   * new Function1[TreePatternBits, Boolean] {
+   *  def apply(plan: TreePatternBits): Boolean {
+   *    plan.containsPattern(INTERSECT)
+   *  }
+   * }
+   * @param plan
+   *  @return
+   */
   def apply(plan: LogicalPlan): LogicalPlan = plan.transformWithPruning(
     _.containsPattern(INTERSECT), ruleId) {
+
     case Intersect(left, right, false) =>
       assert(left.output.size == right.output.size)
       val joinCond = left.output.zip(right.output).map { case (l, r) => EqualNullSafe(l, r) }
