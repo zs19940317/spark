@@ -263,6 +263,10 @@ object PhysicalAggregation {
       // build a set of semantically distinct aggregate expressions and re-write expressions so
       // that they reference the single copy of the aggregate function which actually gets computed.
       // Non-deterministic aggregate expressions are not deduplicated.
+      // 这一步其实就是去重+把非确定性的聚合表达式剔除，比如说聚合里面用了随机函数，那就是非确定性的函数
+      // 而且把select中非聚合函数也剔除出去了；比如说如果在select，有一个非聚合字段（groupBy中的字段）,和一个聚合函数
+      // 那么这个非聚合函数就会被剔除，只留下聚合函数
+      // 这里的collect其实对所有的子都进行了操作
       val equivalentAggregateExpressions = new EquivalentExpressions
       val aggregateExpressions = resultExpressions.flatMap { expr =>
         expr.collect {
@@ -278,6 +282,7 @@ object PhysicalAggregation {
         // If the expression is not a NamedExpressions, we add an alias.
         // So, when we generate the result of the operator, the Aggregate Operator
         // can directly get the Seq of attributes representing the grouping expressions.
+        // 就是对groupBy后列加一个别名，供后续引用
         case other =>
           val withAlias = Alias(other, other.toString)()
           other -> withAlias
@@ -290,6 +295,12 @@ object PhysicalAggregation {
       // which takes the grouping columns and final aggregate result buffer as input.
       // Thus, we must re-write the result expressions so that their attributes match up with
       // the attributes of the final result projection's input row:
+      // 因为之前，程序对重复的聚合函数进行了统一，只要有重复，则就用同一个聚合函数引用，这时候，就需要改写
+      // resultExpressions，即对外输出的内容，将原先的普通聚合函数，改写为引用聚合函数，比如说
+      //    "select count(id), count(id) + 1,  dept_name from course group by dept_name"
+      // 这里count(id)就被重复使用了，如果不转换，那就是自己算自己的，产生重复计算
+      // 转换过后，使用一个统一的count(id)，相当于引用一个统一的count(id)，这样算一遍就行了；
+      // equivalentAggregateExpressions那个统一的count(id)就是在这个表达式里拿出来的
       val rewrittenResultExpressions = resultExpressions.map { expr =>
         expr.transformDown {
           case ae: AggregateExpression =>

@@ -1421,6 +1421,7 @@ object CombineUnions extends Rule[LogicalPlan] {
 /**
  * Combines two adjacent [[Filter]] operators into one, merging the non-redundant conditions into
  * one conjunctive predicate.
+ * 合并过滤条件
  */
 object CombineFilters extends Rule[LogicalPlan] with PredicateHelper {
   def apply(plan: LogicalPlan): LogicalPlan = plan.transformWithPruning(

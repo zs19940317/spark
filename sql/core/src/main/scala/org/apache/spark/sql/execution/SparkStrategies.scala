@@ -496,7 +496,7 @@ abstract class SparkStrategies extends QueryPlanner[SparkPlan] {
         if aggExpressions.forall(expr => expr.isInstanceOf[AggregateExpression]) =>
         val aggregateExpressions = aggExpressions.map(expr =>
           expr.asInstanceOf[AggregateExpression])
-
+        // 这里通过一个_.isDistinct 将聚合函数分成聚合函数和非聚合函数
         val (functionsWithDistinct, functionsWithoutDistinct) =
           aggregateExpressions.partition(_.isDistinct)
         if (functionsWithDistinct.map(

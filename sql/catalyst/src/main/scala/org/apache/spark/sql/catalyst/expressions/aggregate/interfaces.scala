@@ -32,6 +32,7 @@ sealed trait AggregateMode
  * An [[AggregateFunction]] with [[Partial]] mode is used for partial aggregation.
  * This function updates the given aggregation buffer with the original input of this
  * function. When it has processed all input rows, the aggregation buffer is returned.
+ * 局部聚合，针对的是一个aggregate buffer
  */
 case object Partial extends AggregateMode
 
@@ -40,6 +41,7 @@ case object Partial extends AggregateMode
  * containing intermediate results for this function.
  * This function updates the given aggregation buffer by merging multiple aggregation buffers.
  * When it has processed all input rows, the aggregation buffer is returned.
+ * 局部缓冲区合并。map前的局部缓冲区合并
  */
 case object PartialMerge extends AggregateMode
 
@@ -48,6 +50,7 @@ case object PartialMerge extends AggregateMode
  * containing intermediate results for this function and then generate final result.
  * This function updates the given aggregation buffer by merging multiple aggregation buffers.
  * When it has processed all input rows, the final result of this function is returned.
+ * 最终缓冲区合并，reduce的缓冲区合并之后，就形成了最终的结果
  */
 case object Final extends AggregateMode
 
@@ -56,6 +59,7 @@ case object Final extends AggregateMode
  * from original input rows without any partial aggregation.
  * This function updates the given aggregation buffer with the original input of this
  * function. When it has processed all input rows, the final result of this function is returned.
+ * 不使用任何局部聚合以及合并操作
  */
 case object Complete extends AggregateMode
 
